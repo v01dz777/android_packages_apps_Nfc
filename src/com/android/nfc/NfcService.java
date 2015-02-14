@@ -79,6 +79,7 @@ import android.os.Vibrator;
 import android.provider.Settings;
 import android.service.vr.IVrManager;
 import android.service.vr.IVrStateCallbacks;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.internal.logging.MetricsLogger;
@@ -534,14 +535,14 @@ public class NfcService implements DeviceHostListener {
         }
     }
 
-    //boolean isSecHal() {
-    //    String nfcSecHal = SystemProperties.get("ro.nfc.sec_hal");
-    //    if (!TextUtils.isEmpty(nfcSecHal)) {
-    //        Log.i(TAG, "This device uses SEC NFC CHIP.");
-    //        return true;
-    //    }
-    //    return false;
-    //}
+    boolean isSecHal() {
+        String nfcSecHal = SystemProperties.get("ro.nfc.sec_hal");
+        if (!TextUtils.isEmpty(nfcSecHal)) {
+            Log.i(TAG, "This device uses SEC NFC CHIP.");
+            return true;
+        }
+        return false;
+    }
 
     /**
      * Manages tasks that involve turning on/off the NFC controller.
@@ -603,7 +604,7 @@ public class NfcService implements DeviceHostListener {
                     if (mPrefs.getBoolean(PREF_NFC_ON, NFC_ON_DEFAULT)) {
                         Log.d(TAG, "NFC is on. Doing normal stuff");
                         enableInternal();
-                    } else {
+                    } else if (!isSecHal()) {
                         Log.d(TAG, "NFC is off.  Checking firmware version");
                         mDeviceHost.checkFirmware();
                     }
