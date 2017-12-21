@@ -248,19 +248,24 @@ public class NativeNfcTag implements TagEndpoint {
     }
     native boolean doDisconnect();
     @Override
-    public synchronized boolean disconnect() {
+    public boolean disconnect() {
         boolean result = false;
-
-        mIsPresent = false;
-        if (mWatchdog != null) {
+        PresenceCheckWatchdog watchdog;
+        synchronized (this) {
+            mIsPresent = false;
+            watchdog = mWatchdog;
+        }
+        if (watchdog != null) {
             // Watchdog has already disconnected or will do it
-            mWatchdog.end();
+            watchdog.end();
             try {
-                mWatchdog.join();
+                watchdog.join();
             } catch (InterruptedException e) {
                 // Should never happen.
             }
-            mWatchdog = null;
+            synchronized (this) {
+                mWatchdog = null;
+            }
             result = true;
         } else {
             result = doDisconnect();
@@ -799,7 +804,7 @@ public class NativeNfcTag implements TagEndpoint {
             int supportedNdefLength = ndefinfo[0];
             int cardState = ndefinfo[1];
             byte[] buff = readNdef();
-            if (buff != null) {
+            if (buff != null && buff.length > 0) {
                 try {
                     ndefMsg = new NdefMessage(buff);
                     addNdefTechnology(ndefMsg,
@@ -812,17 +817,18 @@ public class NativeNfcTag implements TagEndpoint {
                    // Create an intent anyway, without NDEF messages
                    generateEmptyNdef = true;
                 }
-            } else {
+            } else if(buff != null){
+                // Empty buffer, unformatted tags fall into this case
                 generateEmptyNdef = true;
             }
 
             if (generateEmptyNdef) {
                 ndefMsg = null;
                 addNdefTechnology(null,
-                        getConnectedHandle(),
-                        getConnectedLibNfcType(),
-                        getConnectedTechnology(),
-                        supportedNdefLength, cardState);
+                      getConnectedHandle(),
+                      getConnectedLibNfcType(),
+                      getConnectedTechnology(),
+                      supportedNdefLength, cardState);
                 foundFormattable = false;
                 reconnect();
             }

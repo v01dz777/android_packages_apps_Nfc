@@ -26,7 +26,10 @@ import android.animation.PropertyValuesHolder;
 import android.animation.TimeAnimator;
 import android.app.ActivityManager;
 import android.app.StatusBarManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
@@ -41,6 +44,7 @@ import android.util.Log;
 import android.view.ActionMode;
 import android.view.Display;
 import android.view.KeyEvent;
+import android.view.KeyboardShortcutGroup;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -61,6 +65,8 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.util.List;
 
 /**
  * This class is responsible for handling the UI animation
@@ -319,6 +325,9 @@ public class SendUi implements Animator.AnimatorListener, View.OnTouchListener,
         }
         mState = STATE_W4_SCREENSHOT;
         new ScreenshotTask().execute();
+
+        final IntentFilter filter = new IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+        mContext.registerReceiver(mReceiver, filter);
     }
 
     /** Show pre-send animation */
@@ -366,7 +375,7 @@ public class SendUi implements Animator.AnimatorListener, View.OnTouchListener,
         if (promptToNfcTap) {
             mTextHint.setText(mContext.getResources().getString(R.string.ask_nfc_tap));
         } else {
-            mTextHint.setText(mContext.getResources().getString(R.string.touch));
+            mTextHint.setText(mContext.getResources().getString(R.string.tap_to_beam));
         }
         mTextHint.setAlpha(0.0f);
         mTextHint.setVisibility(View.VISIBLE);
@@ -526,8 +535,11 @@ public class SendUi implements Animator.AnimatorListener, View.OnTouchListener,
         mWindowManager.removeView(mDecor);
         mStatusBarManager.disable(StatusBarManager.DISABLE_NONE);
         mScreenshotBitmap = null;
+        mContext.unregisterReceiver(mReceiver);
         if (mToastString != null) {
-            Toast.makeText(mContext, mToastString, Toast.LENGTH_LONG).show();
+            Toast toast = Toast.makeText(mContext, mToastString, Toast.LENGTH_LONG);
+            toast.getWindowParams().privateFlags |= LayoutParams.PRIVATE_FLAG_SHOW_FOR_ALL_USERS;
+            toast.show();
         }
         mToastString = null;
     }
@@ -888,4 +900,13 @@ public class SendUi implements Animator.AnimatorListener, View.OnTouchListener,
     @Override
     public void onActionModeFinished(ActionMode mode) {
     }
+
+    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (Intent.ACTION_CLOSE_SYSTEM_DIALOGS.equals(intent.getAction())) {
+                mCallback.onCanceled();
+            }
+        }
+    };
 }

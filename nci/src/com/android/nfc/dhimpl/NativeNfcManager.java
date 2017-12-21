@@ -26,6 +26,10 @@ import com.android.nfc.DeviceHost;
 import com.android.nfc.LlcpException;
 import com.android.nfc.NfcDiscoveryParameters;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.HashMap;
+
 /**
  * Native interface to the NFC Manager functions
  */
@@ -42,13 +46,15 @@ public class NativeNfcManager implements DeviceHost {
         System.loadLibrary("nfc_nci_jni");
     }
 
-
     /* Native structure */
     private long mNative;
 
+    private int mIsoDepMaxTransceiveLength;
     private final DeviceHostListener mListener;
     private final Context mContext;
 
+    private final Object mLock = new Object();
+    private final HashMap<Integer, byte[]> mT3tIdentifiers = new HashMap<Integer, byte[]>();
 
     public NativeNfcManager(Context context, DeviceHostListener listener) {
         mListener = listener;
@@ -69,9 +75,13 @@ public class NativeNfcManager implements DeviceHost {
 
     private native boolean doInitialize();
 
+    private native int getIsoDepMaxTransceiveLength();
+
     @Override
     public boolean initialize() {
-        return doInitialize();
+        boolean ret = doInitialize();
+        mIsoDepMaxTransceiveLength = getIsoDepMaxTransceiveLength();
+        return ret;
     }
 
     private native boolean doDeinitialize();
@@ -97,6 +107,46 @@ public class NativeNfcManager implements DeviceHost {
 
     @Override
     public native boolean commitRouting();
+
+    public native int doRegisterT3tIdentifier(byte[] t3tIdentifier);
+
+    @Override
+    public void registerT3tIdentifier(byte[] t3tIdentifier) {
+        synchronized (mLock) {
+            int handle = doRegisterT3tIdentifier(t3tIdentifier);
+            if (handle != 0xffff) {
+                mT3tIdentifiers.put(Integer.valueOf(handle), t3tIdentifier);
+            }
+        }
+    }
+
+    public native void doDeregisterT3tIdentifier(int handle);
+
+    @Override
+    public void deregisterT3tIdentifier(byte[] t3tIdentifier) {
+        synchronized (mLock) {
+            Iterator<Integer> it = mT3tIdentifiers.keySet().iterator();
+            while (it.hasNext()) {
+                int handle = it.next().intValue();
+                byte[] value = mT3tIdentifiers.get(handle);
+                if (Arrays.equals(value, t3tIdentifier)) {
+                    doDeregisterT3tIdentifier(handle);
+                    mT3tIdentifiers.remove(handle);
+                    break;
+                }
+            }
+        }
+    }
+
+    @Override
+    public void clearT3tIdentifiersCache() {
+        synchronized (mLock) {
+            mT3tIdentifiers.clear();
+        }
+    }
+
+    @Override
+    public native int getLfT3tMax();
 
     private native void doEnableDiscovery(int techMask,
                                           boolean enableLowPowerPolling,
@@ -201,7 +251,7 @@ public class NativeNfcManager implements DeviceHost {
     }
 
     @Override
-    public native void doAbort();
+    public native void doAbort(String msg);
 
     private native boolean doSetTimeout(int tech, int timeout);
     @Override
@@ -236,12 +286,7 @@ public class NativeNfcManager implements DeviceHost {
             case (TagTechnology.NFC_V):
                 return 253; // PN544 RF buffer = 255 bytes, subtract two for CRC
             case (TagTechnology.ISO_DEP):
-                /* The maximum length of a normal IsoDep frame consists of:
-                 * CLA, INS, P1, P2, LC, LE + 255 payload bytes = 261 bytes
-                 * such a frame is supported. Extended length frames however
-                 * are not supported.
-                 */
-                return 261; // Will be automatically split in two frames on the RF layer
+                return mIsoDepMaxTransceiveLength;
             case (TagTechnology.NFC_F):
                 return 252; // PN544 RF buffer = 255 bytes, subtract one for SoD, two for CRC
             default:
@@ -264,7 +309,9 @@ public class NativeNfcManager implements DeviceHost {
 
     @Override
     public boolean getExtendedLengthApdusSupported() {
-        // TODO check BCM support
+        /* 261 is the default size if extended length frames aren't supported */
+        if (getMaxTransceiveLength(TagTechnology.ISO_DEP) > 261)
+            return true;
         return false;
     }
 
@@ -326,16 +373,16 @@ public class NativeNfcManager implements DeviceHost {
         mListener.onLlcpFirstPacketReceived(device);
     }
 
-    private void notifyHostEmuActivated() {
-        mListener.onHostCardEmulationActivated();
+    private void notifyHostEmuActivated(int technology) {
+        mListener.onHostCardEmulationActivated(technology);
     }
 
-    private void notifyHostEmuData(byte[] data) {
-        mListener.onHostCardEmulationData(data);
+    private void notifyHostEmuData(int technology, byte[] data) {
+        mListener.onHostCardEmulationData(technology, data);
     }
 
-    private void notifyHostEmuDeactivated() {
-        mListener.onHostCardEmulationDeactivated();
+    private void notifyHostEmuDeactivated(int technology) {
+        mListener.onHostCardEmulationDeactivated(technology);
     }
 
     private void notifyRfFieldActivated() {
