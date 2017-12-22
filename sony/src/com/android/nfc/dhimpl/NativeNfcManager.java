@@ -150,14 +150,65 @@ public class NativeNfcManager implements DeviceHost {
         return true;
     }
 
+    private native int nativeStopReaderAction();
+
+    @Override
+    public void registerT3tIdentifier(byte[] t3tIdentifier) {
+/*
+        synchronized (mLock) {
+            int handle = doRegisterT3tIdentifier(t3tIdentifier);
+            if (handle != 0xffff) {
+                mT3tIdentifiers.put(Integer.valueOf(handle), t3tIdentifier);
+            }
+        }
+*/
+    }
+
+    public native void doDeregisterT3tIdentifier(int handle);
+
+    @Override
+    public void deregisterT3tIdentifier(byte[] t3tIdentifier) {
+		/*
+        synchronized (mLock) {
+            Iterator<Integer> it = mT3tIdentifiers.keySet().iterator();
+            while (it.hasNext()) {
+                int handle = it.next().intValue();
+                byte[] value = mT3tIdentifiers.get(handle);
+                if (Arrays.equals(value, t3tIdentifier)) {
+                    doDeregisterT3tIdentifier(handle);
+                    mT3tIdentifiers.remove(handle);
+                    break;
+                }
+            }
+        }
+		*/
+    }
+
+    @Override
+    public void clearT3tIdentifiersCache() {
+		/*
+        synchronized (mLock) {
+            mT3tIdentifiers.clear();
+        }
+		*/
+    }
+
+    @Override
+    public native int getLfT3tMax();
+
+    private native void doEnableDiscovery(int techMask,
+                                          boolean enableLowPowerPolling,
+                                          boolean enableReaderMode,
+                                          boolean enableHostRouting,
+                                          boolean enableP2p,
+                                          boolean restart);
+
     private native int nativeStartDiscover(byte b1, byte b2);
 
     @Override
     public void enableDiscovery(NfcDiscoveryParameters params, boolean restart) {
         nativeStartDiscover((byte)0, (byte)0);
     }
-
-    private native int nativeStopReaderAction();
 
     @Override
     public void disableDiscovery() {
@@ -253,7 +304,7 @@ public class NativeNfcManager implements DeviceHost {
     public native void nativeAbort();
 
     @Override
-    public void doAbort() {
+    public void doAbort(String msg) {
         nativeAbort();
     }
 
