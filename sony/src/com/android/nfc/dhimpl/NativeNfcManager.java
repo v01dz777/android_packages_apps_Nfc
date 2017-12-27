@@ -124,77 +124,46 @@ public class NativeNfcManager implements DeviceHost {
     }
 
     @Override
-    public boolean sendRawFrame(byte[] data)
-    {
+    public boolean sendRawFrame(byte[] data) {
         return false;
     }
 
     @Override
-    public boolean routeAid(byte[] aid, int route)
-    {
+    public boolean routeAid(byte[] aid, int route) {
         return false;
     }
 
     @Override
-    public boolean unrouteAid(byte[] aid)
-    {
+    public boolean unrouteAid(byte[] aid) {
        return false;
     }
 
-    private native void doCommitRouting();
-
     @Override
-    public boolean commitRouting()
-    {
-        doCommitRouting();
-        return true;
+    public boolean commitRouting() {
+        return false;
     }
 
     private native int nativeStopReaderAction();
 
     @Override
     public void registerT3tIdentifier(byte[] t3tIdentifier) {
-/*
-        synchronized (mLock) {
-            int handle = doRegisterT3tIdentifier(t3tIdentifier);
-            if (handle != 0xffff) {
-                mT3tIdentifiers.put(Integer.valueOf(handle), t3tIdentifier);
-            }
-        }
-*/
+        return;
     }
-
-    public native void doDeregisterT3tIdentifier(int handle);
 
     @Override
     public void deregisterT3tIdentifier(byte[] t3tIdentifier) {
-		/*
-        synchronized (mLock) {
-            Iterator<Integer> it = mT3tIdentifiers.keySet().iterator();
-            while (it.hasNext()) {
-                int handle = it.next().intValue();
-                byte[] value = mT3tIdentifiers.get(handle);
-                if (Arrays.equals(value, t3tIdentifier)) {
-                    doDeregisterT3tIdentifier(handle);
-                    mT3tIdentifiers.remove(handle);
-                    break;
-                }
-            }
-        }
-		*/
+        return;
     }
 
     @Override
     public void clearT3tIdentifiersCache() {
-		/*
-        synchronized (mLock) {
-            mT3tIdentifiers.clear();
-        }
-		*/
+        return;
     }
 
     @Override
-    public native int getLfT3tMax();
+    public int getLfT3tMax() {
+        return 0;
+    }
 
     private native void doEnableDiscovery(int techMask,
                                           boolean enableLowPowerPolling,
