@@ -29,6 +29,7 @@ import android.nfc.tech.TagTechnology;
 import android.util.Log;
 import com.android.nfc.NfcDiscoveryParameters;
 
+import java.io.FileDescriptor;
 import java.io.File;
 
 /**
@@ -105,6 +106,17 @@ public class NativeNfcManager implements DeviceHost {
         return result;
     }
 
+   @Override
+    public void enableDtaMode() {
+        //doEnableDtaMode();
+    }
+
+    @Override
+    public void disableDtaMode() {
+        Log.d(TAG,"disableDtaMode : entry");
+        //doDisableDtaMode();
+    }
+
     private native int nativeDeinitialize();
 
     @Override
@@ -129,7 +141,7 @@ public class NativeNfcManager implements DeviceHost {
     }
 
     @Override
-    public boolean routeAid(byte[] aid, int route) {
+    public boolean routeAid(byte[] aid, int route, int aidInfo) {
         return false;
     }
 
@@ -163,6 +175,15 @@ public class NativeNfcManager implements DeviceHost {
     @Override
     public int getLfT3tMax() {
         return 0;
+    }
+
+    @Override
+    public native void doSetScreenState(int screen_state_mask);
+
+    @Override
+    //public native int getNciVersion();
+    public int getNciVersion() {
+      return 1;
     }
 
     private native void doEnableDiscovery(int techMask,
@@ -312,6 +333,12 @@ public class NativeNfcManager implements DeviceHost {
     public void setP2pTargetModes(int modes) {
     }
 
+
+    @Override
+    public void dump(FileDescriptor fd) {
+        //doDump(fd);
+    }
+
     @Override
     public boolean enableScreenOffSuspend() {
         // Snooze mode not supported on NXP silicon
@@ -342,11 +369,11 @@ public class NativeNfcManager implements DeviceHost {
         return DEFAULT_LLCP_RWSIZE;
     }
 
-    private native String nativeDump();
-    @Override
-    public String dump() {
-        return nativeDump();
-    }
+//    private native String nativeDump();
+//    @Override
+//    public String dump() {
+//        return nativeDump();
+//    }
 
     /**
      * Notifies Ndef Message (TODO: rename into notifyTargetDiscovered)
