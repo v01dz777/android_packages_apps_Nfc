@@ -108,6 +108,7 @@ public class NativeNfcManager implements DeviceHost {
 
    @Override
     public void enableDtaMode() {
+        Log.d(TAG,"enableDtaMode : entry");
         //doEnableDtaMode();
     }
 
@@ -178,7 +179,11 @@ public class NativeNfcManager implements DeviceHost {
     }
 
     @Override
-    public native void doSetScreenState(int screen_state_mask);
+    //public native void doSetScreenState(int screen_state_mask);
+	public void doSetScreenState(int screen_state_mask)
+	{
+        Log.d(TAG,"doSetScreenState : entry");
+	}
 
     @Override
     //public native int getNciVersion();
@@ -369,7 +374,7 @@ public class NativeNfcManager implements DeviceHost {
         return DEFAULT_LLCP_RWSIZE;
     }
 
-//    private native String nativeDump();
+    private native String nativeDump();
 //    @Override
 //    public String dump() {
 //        return nativeDump();
