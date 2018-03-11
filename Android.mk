@@ -67,7 +67,7 @@ LOCAL_OVERRIDES_PACKAGES := Nfc
 LOCAL_CERTIFICATE := platform
 
 LOCAL_STATIC_JAVA_LIBRARIES := android-support-v4
-
+LOCAL_JNI_SHARED_LIBRARIES := libnfc_sony_jni libnfc_sony_ndef libnfc_sony
 LOCAL_PROGUARD_ENABLED := disabled
 
 include $(BUILD_PACKAGE)
